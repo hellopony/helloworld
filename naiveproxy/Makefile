@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-only
 #
 # Copyright (C) 2021 ImmortalWrt.org
-
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=naiveproxy
@@ -14,44 +13,7 @@ PKG_HASH:=8e6d3029a0249140595fab3d668103881689f6c7ef7c65230191f674a370b309
 
 PKG_LICENSE:=BSD 3-Clause
 PKG_LICENSE_FILES:=LICENSE
-PKG_MAINTAINER:=Tianling Shen <cnsztl@immortalwrt.org>
-
-PKG_BUILD_DEPENDS:=gn/host
-PKG_BUILD_PARALLEL:=1
-PKG_BUILD_FLAGS:=no-mips16
-
-ifneq ($(CONFIG_CPU_TYPE)," ")
-  CPU_TYPE:=$(word 1, $(subst +," ,$(CONFIG_CPU_TYPE)))
-  CPU_SUBTYPE:=$(word 2, $(subst +, ",$(CONFIG_CPU_TYPE)))
-  ifeq ($(CPU_SUBTYPE),)
-    CPU_SUBTYPE:=""
-  endif
-else
-  CPU_TYPE:=""
-  CPU_SUBTYPE:=""
-endif
-
-include $(INCLUDE_DIR)/package.mk
-
-define Package/naiveproxy
-  SECTION:=net
-  CATEGORY:=Network
-  SUBMENU:=Web Servers/Proxies
-  TITLE:=Make a fortune quietly
-  URL:=https://github.com/klzgrad/naiveproxy
-  DEPENDS:=@!(arc||armeb||mips||mips64||powerpc||TARGET_gemini) +libatomic
-endef
-
-define Package/naiveproxy/description
-  NaïveProxy uses Chrome's network stack to camouflage traffic with strong
-  censorship resistance and low detectability. Reusing Chrome's stack also
-  ensures best practices in performance and security.
-endef
-
-ifneq ($(CONFIG_CCACHE),)
-  export CCACHE_SLOPPINESS=time_macros
-  export CCACHE_BASEDIR=$(PKG_BUILD_DIR)/src
-  export CCACHE_CPP2=yes
+@@ -55,22 +55,22 @@ ifneq ($(CONFIG_CCACHE),)
   export naive_ccache_flags=cc_wrapper="$(CCACHE)"
 endif
 
@@ -62,6 +24,7 @@ define Download/CLANG
 	URL_FILE:=$(CLANG_FILE)
 	FILE:=$(CLANG_FILE)
 	HASH:=fd1628fdb22157a7328c25802a745f17f92f5210a8b62591202deb92413f52e5
+endef
 
 PGO_VER:=6167-1705427108-cb39f8a22759d3159f79efc273ac8b13a0f3882a
 PGO_FILE:=chrome-linux-$(PGO_VER).profdata
@@ -74,7 +37,6 @@ endef
 
 define Build/Prepare
 	$(call Build/Prepare/Default)
-
 	( \
 		pushd $(PKG_BUILD_DIR)/src ; \
 		mkdir -p "chrome/build/pgo_profiles" ; \
@@ -85,7 +47,6 @@ define Build/Prepare
 		popd ; \
 	)
 endef
-
 define Build/Configure
 	( \
 		pushd "$(PKG_BUILD_DIR)/src" ; \
@@ -96,17 +57,13 @@ define Build/Configure
 		popd ; \
 	)
 endef
-
 define Build/Compile
 	+$(NINJA) -C "$(PKG_BUILD_DIR)/src/out/Release" naive
 endef
-
 define Package/naiveproxy/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/out/Release/naive $(1)/usr/bin/naive
 endef
-
 $(eval $(call Download,CLANG))
 $(eval $(call Download,PGO_PROF))
-
 $(eval $(call BuildPackage,naiveproxy))
